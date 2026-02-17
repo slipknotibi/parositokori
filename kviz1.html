@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lilien – Környezetismeret kvíz</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Lilien – Környezetismeret kvíz</h1>
+<div id="timer">20:00</div>
+
+<div id="quizBox"></div>
+
+<button id="startBtn" onclick="startQuiz()">Kezdés</button>
+
+<div id="resultBox"></div>
+
+<button id="showAnswersBtn" style="display:none;">Válaszok megtekintése</button>
+<div id="answersList" style="display:none;"></div>
+
+<div id="stopScreen">
+    STOP
+    <button id="continueBtn">Folytatás</button>
+</div>
+
+<script>
+let questions = [
+    {question:"Melyik NEM életjelenség?",answers:["Légzés","Mozgás","Rozsdásodás"],correct:2},
+    {question:"Miért fontos a táplálkozás?",answers:["Energiát ad","Színt változtat","Lassítja a növekedést"],correct:0},
+    {question:"Melyik életfeltétel?",answers:["Fény","Hang","Játék"],correct:0},
+    {question:"Miért növekednek az élőlények?",answers:["Mert változnak az idővel","Mert elfáradnak","Mert túl sok vizet isznak"],correct:0},
+    {question:"Melyik életjelenség az utód létrehozása?",answers:["Szaporodás","Légzés","Táplálkozás"],correct:0},
+    {question:"Melyik NEM életfeltétel?",answers:["Levegő","Fény","Hang"],correct:2},
+
+    {question:"Melyik NEM növényi csoport?",answers:["Fák","Bokrok","Kagylók"],correct:2},
+    {question:"A gyökér feladata:",answers:["Rögzít és felszív","Színt ad","Magot termel"],correct:0},
+    {question:"A szár feladata:",answers:["Szállít és tart","Légzés","Szaporodás"],correct:0},
+    {question:"A levél feladata:",answers:["Táplálékkészítés és légzés","Magok védelme","Tartás"],correct:0},
+    {question:"A virág feladata:",answers:["Szaporodás","Légzés","Táplálékkészítés"],correct:0},
+    {question:"A termés mit tartalmaz?",answers:["Gyökereket","Magokat","Leveleket"],correct:1},
+    {question:"Miért hullajtják le a lombhullatók a leveleiket?",answers:["Nyugalmi állapot","Kiszáradás","Túl nehezek"],correct:0},
+    {question:"A növények miért hasznosak?",answers:["Oxigént termelnek","Csökkentik a fényt","Elriasztják az állatokat"],correct:0},
+
+    {question:"Melyik háziasított állat?",answers:["Róka","Kecske","Hiúz"],correct:1},
+    {question:"A vadon élő állatok:",answers:["Az ember eteti őket","Maguk keresnek táplálékot","Házban laknak"],correct:1},
+    {question:"Mi borítja az emlősök testét?",answers:["Toll","Szőr","Pikkely"],correct:1},
+    {question:"Az emlősök utódai:",answers:["Tojásból kelnek ki","Élve születnek","A vízben fejlődnek"],correct:1},
+    {question:"Az emlősök mivel táplálják a kicsinyeiket?",answers:["Víz","Tej","Magvak"],correct:1},
+    {question:"A vízi emlősök hogyan lélegeznek?",answers:["Kopoltyúval","Tüdővel","Bőrrel"],correct:1},
+    {question:"Melyik állat növényevő?",answers:["Őz","Róka","Vidra"],correct:0},
+    {question:"Melyik állat húsevő?",answers:["Nyúl","Hiúz","Ló"],correct:1},
+    {question:"Melyik állat mindenevő?",answers:["Vaddisznó","Csuka","Hiúz"],correct:0},
+
+    {question:"Mi borítja a madarak testét?",answers:["Szőr","Toll","Pikkely"],correct:1},
+    {question:"Melyik madár röpképtelen?",answers:["Fecske","Strucc","Gólya"],correct:1},
+    {question:"A madarak mivel lélegeznek?",answers:["Kopoltyúval","Tüdővel","Bőrrel"],correct:1},
+    {question:"A ragadozó madarak csőre:",answers:["Kúpalakú","Kampós, vágócsőr","Lapos, szűrőcsőr"],correct:1},
+    {question:"A vízi madarak lába:",answers:["Úszóláb","Karom","Tapadókorong"],correct:0},
+    {question:"A fészeklakók:",answers:["Csupaszon és vakon kelnek ki","Azonnal önállóak","Nem építenek fészket"],correct:0},
+    {question:"A vándormadarak miért repülnek el?",answers:["Több táplálék miatt","Unatkoznak","Túl sok a fény"],correct:0},
+
+    {question:"Mi borítja a halak testét?",answers:["Toll","Nyálkás bőr és pikkely","Szőr"],correct:1},
+    {question:"A halaknak van-e nyakuk?",answers:["Igen","Nincs","Csak a ragadozóknak"],correct:1},
+    {question:"A halak mivel lélegeznek?",answers:["Tüdővel","Kopoltyúval","Bőrrel"],correct:1},
+    {question:"Mi segíti a halakat az emelkedésben?",answers:["Úszóhólyag","Farok","Kopoltyú"],correct:0},
+    {question:"Melyik hal növényevő?",answers:["Amur","Csuka","Harcsa"],correct:0},
+    {question:"Melyik hal ragadozó?",answers:["Ponty","Csuka","Ezüstkárász"],correct:1},
+    {question:"Melyik hal mindenevő?",answers:["Ponty","Csuka","Harcsa"],correct:0},
+    {question:"A halak szaporodása:",answers:["Tojással","Ikrákkal","Élve születéssel"],correct:1},
+
+    {question:"Mi veszélyezteti az élőhelyeket?",answers:["Szennyezés és erdőirtás","Túl sok eső","Túl sok madár"],correct:0},
+    {question:"Hol óvják a veszélyeztetett fajokat?",answers:["Áruházakban","Nemzeti parkokban","Iskolákban"],correct:1},
+    {question:"Mit jelent az, hogy egy állat vadon él?",answers:["Az ember gondoskodik róla","Természetes környezetben él","Állatkertben él"],correct:1},
+    {question:"Mit jelent a mondat: „Csak a lábnyomod hagyd az erdőben”?",answers:["Ne hagyj szemetet","Mindig fuss az erdőben","Ne menj az erdőbe"],correct:0}
+];
+
+let current = 0;
+let score = 0;
+let timeLeft = 1200;
+let timer;
+let userAnswers = [];
+
+function formatTime(sec) {
+    let m = Math.floor(sec / 60);
+    let s = sec % 60;
+    return `${m}:${s < 10 ? "0" + s : s}`;
+}
+
+function startQuiz() {
+    document.getElementById("startBtn").style.display = "none";
+    document.getElementById("stopScreen").style.display = "none";
+    document.getElementById("timer").innerText = formatTime(timeLeft);
+    showQuestion();
+    startTimer();
+}
+
+function startTimer() {
+    timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = formatTime(timeLeft);
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            showStopScreen();
+        }
+    }, 1000);
+}
+
+function showQuestion() {
+    let q = questions[current];
+    let html = `<div class='question'><h3>${q.question}</h3>`;
+
+    q.answers.forEach((ans, i) => {
+        html += `<button onclick="answer(${i})">${ans}</button>`;
+    });
+
+    html += "</div>";
+    document.getElementById("quizBox").innerHTML = html;
+}
+
+function answer(i) {
+    userAnswers[current] = i;
+
+    if (i === questions[current].correct) score++;
+
+    current++;
+
+    if (current < questions.length) {
+        showQuestion();
+    } else {
+        endQuiz();
+    }
+}
+
+function endQuiz() {
+    clearInterval(timer);
+    document.getElementById("quizBox").innerHTML = "";
+
+    let percent = Math.round((score / questions.length) * 100);
+    let grade = 1;
+    if (percent >= 90) grade = 5;
+    else if (percent >= 75) grade = 4;
+    else if (percent >= 60) grade = 3;
+    else if (percent >= 45) grade = 2;
+
+    document.getElementById("resultBox").innerHTML =
+        `<h2>Eredmény: ${score} / ${questions.length} (${percent}%)<br>Érdemjegy: ${grade}</h2>`;
+
+    document.getElementById("showAnswersBtn").style.display = "block";
+}
+
+function showStopScreen() {
+    document.getElementById("quizBox").innerHTML = "";
+    document.getElementById("stopScreen").style.display = "flex";
+    clearInterval(timer);
+}
+
+document.getElementById("continueBtn").addEventListener("click", function () {
+    document.getElementById("stopScreen").style.display = "none";
+    timeLeft = 1200;
+    document.getElementById("timer").innerText = formatTime(timeLeft);
+    startTimer();
+    showQuestion();
+});
+
+document.getElementById("showAnswersBtn").addEventListener("click", function () {
+    let html = "<h2>Helyes válaszok</h2>";
+
+    questions.forEach((q, i) => {
+        html += `
+            <div style="margin-bottom:20px; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                <strong>${i+1}. kérdés:</strong> ${q.question}<br>
+                <span style="color:green;"><strong>Helyes válasz:</strong> ${q.answers[q.correct]}</span><br>
+                <span style="color:blue;"><strong>A te válaszod:</strong> ${userAnswers[i] !== undefined ? q.answers[userAnswers[i]] : "—"}</span>
+            </div>
+        `;
+    });
+
+    document.getElementById("answersList").innerHTML = html;
+    document.getElementById("answersList").style.display = "block";
+});
+</script>
+
+</body>
+</html>
