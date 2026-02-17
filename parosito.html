@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Párosítós gyakorló – Liliennek</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #topBar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #topBar select, #topBar button {
+            padding: 8px 12px;
+            font-size: 16px;
+        }
+        #gameContainer {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        #columns {
+            display: flex;
+            gap: 10px;
+        }
+        .col {
+            flex: 1;
+            position: relative;
+        }
+        .item {
+            background: #e9f1ff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin: 6px 0;
+            cursor: pointer;
+            position: relative;
+            z-index: 2;
+            border: 1px solid transparent;
+            user-select: none;
+        }
+        .item.right {
+            background: #ffe9f1;
+        }
+        .item.selected {
+            border-color: #0078d4;
+            box-shadow: 0 0 0 2px rgba(0,120,212,0.3);
+        }
+        .item.matched {
+            background: #d4f8d4;
+            border-color: #2e7d32;
+            cursor: default;
+        }
+        #svgLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        #status {
+            margin-top: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+        @media (max-width: 700px) {
+            #columns {
+                flex-direction: row;
+                gap: 5px;
+            }
+            .item {
+                font-size: 14px;
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Párosítós gyakorló – Liliennek</h1>
+
+<div id="topBar">
+    <label>
+        Válassz témát:
+        <select id="topicSelect">
+            <option value="animalCover">Állat – testborítás</option>
+            <option value="plantParts">Növény részei – feladatuk</option>
+            <option value="birdBeaks">Madarak – csőr típusok</option>
+            <option value="fishFood">Halak – táplálkozás</option>
+            <option value="lifeProcesses">Életjelenségek</option>
+            <option value="farmUse">Háziállat – haszon</option>
+            <option value="groupsExamples">Élőlény csoport – példa</option>
+            <option value="habitats">Élőhely – oda illő állat</option>
+        </select>
+    </label>
+    <button id="newGameBtn">Újra keverés</button>
+</div>
+
+<div id="gameContainer">
+    <svg id="svgLayer"></svg>
+    <div id="columns">
+        <div class="col" id="leftCol"></div>
+        <div class="col" id="rightCol"></div>
+    </div>
+    <div id="status"></div>
+</div>
+
+<script>
+const topics = {
+    animalCover: {
+        title: "Állat – testborítás",
+        pairs: [
+            ["Emlős", "Szőr"],
+            ["Madár", "Toll"],
+            ["Hal", "Pikkely"],
+            ["Kígyó", "Pikkelyes bőr"],
+            ["Béka", "Nedves bőr"]
+        ]
+    },
+    plantParts: {
+        title: "Növény részei – feladatuk",
+        pairs: [
+            ["Gyökér", "Rögzít, vizet és tápanyagot vesz fel"],
+            ["Szár", "Szállít, tartja a leveleket, virágot"],
+            ["Levél", "Légzés, párologtatás, táplálékkészítés"],
+            ["Virág", "Szaporodás, ebből lesz a termés"],
+            ["Termés", "Magokat tartalmaz"]
+        ]
+    },
+    birdBeaks: {
+        title: "Madarak – csőr típusok",
+        pairs: [
+            ["Kampós csőr", "Ragadozó madár (pl. vércse)"],
+            ["Lapos csőr", "Réce, vízből szűri a táplálékot"],
+            ["Kúpos csőr", "Magevő madár (pl. zöldike)"],
+            ["Hosszú, lapos csőr", "Gólya, békát, egeret fog"],
+            ["Szélesre nyitható csőr", "Fecske, repülő rovarokat kap el"]
+        ]
+    },
+    fishFood: {
+        title: "Halak – táplálkozás",
+        pairs: [
+            ["Amur", "Növényevő"],
+            ["Keszeg", "Növényevő / mindenevő"],
+            ["Csuka", "Ragadozó"],
+            ["Harcsa", "Ragadozó"],
+            ["Ponty", "Mindenevő"]
+        ]
+    },
+    lifeProcesses: {
+        title: "Életjelenségek",
+        pairs: [
+            ["Légzés", "Levegő felvétele az élethez"],
+            ["Mozgás", "Helyváltoztatás, cselekvés"],
+            ["Táplálkozás", "Energiafelvétel az élethez"],
+            ["Szaporodás", "Utódok létrehozása"],
+            ["Növekedés, fejlődés", "Méret- és képességváltozás"]
+        ]
+    },
+    farmUse: {
+        title: "Háziállat – haszon",
+        pairs: [
+            ["Tehén", "Tej, hús"],
+            ["Tyúk", "Tojás, hús"],
+            ["Juh", "Gyapjú, hús"],
+            ["Kecske", "Tej, hús"],
+            ["Liba", "Toll, hús"]
+        ]
+    },
+    groupsExamples: {
+        title: "Élőlény csoport – példa",
+        pairs: [
+            ["Emlős", "Kutya"],
+            ["Madár", "Gólya"],
+            ["Hal", "Ponty"],
+            ["Növény", "Tölgyfa"],
+            ["Gerinces állat", "Róka"]
+        ]
+    },
+    habitats: {
+        title: "Élőhely – oda illő állat",
+        pairs: [
+            ["Erdő", "Őz"],
+            ["Tó, folyó", "Keszeg"],
+            ["Mező, rét", "Mezei nyúl"],
+            ["Vizes élőhely", "Gólya"],
+            ["Barlang", "Denevér"]
+        ]
+    }
+};
+
+let currentTopicKey = "animalCover";
+let leftItems = [];
+let rightItems = [];
+let correctMap = new Map(); // leftId -> rightId
+let selectedLeft = null;
+let selectedRight = null;
+let lines = [];
+let matchedLeft = new Set();
+let matchedRight = new Set();
+
+const leftCol = document.getElementById("leftCol");
+const rightCol = document.getElementById("rightCol");
+const svgLayer = document.getElementById("svgLayer");
+const statusDiv = document.getElementById("status");
+const topicSelect = document.getElementById("topicSelect");
+const newGameBtn = document.getElementById("newGameBtn");
+
+topicSelect.addEventListener("change", () => {
+    currentTopicKey = topicSelect.value;
+    initGame();
+});
+
+newGameBtn.addEventListener("click", () => {
+    initGame();
+});
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+function clearSVG() {
+    while (svgLayer.firstChild) {
+        svgLayer.removeChild(svgLayer.firstChild);
+    }
+    lines = [];
+}
+
+function initGame() {
+    const topic = topics[currentTopicKey];
+    statusDiv.textContent = topic.title;
+    leftCol.innerHTML = "";
+    rightCol.innerHTML = "";
+    clearSVG();
+    selectedLeft = null;
+    selectedRight = null;
+    matchedLeft.clear();
+    matchedRight.clear();
+    correctMap.clear();
+
+    const pairs = topic.pairs.map((p, index) => ({
+        leftText: p[0],
+        rightText: p[1],
+        id: index
+    }));
+
+    const leftData = pairs.map(p => ({ id: "L" + p.id, text: p.leftText, pairId: p.id }));
+    const rightData = pairs.map(p => ({ id: "R" + p.id, text: p.rightText, pairId: p.id }));
+
+    shuffle(leftData);
+    shuffle(rightData);
+
+    leftItems = [];
+    rightItems = [];
+
+    leftData.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item left";
+        div.textContent = item.text;
+        div.dataset.id = item.id;
+        div.dataset.pairId = item.pairId;
+        div.addEventListener("click", () => onLeftClick(div));
+        leftCol.appendChild(div);
+        leftItems.push(div);
+    });
+
+    rightData.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item right";
+        div.textContent = item.text;
+        div.dataset.id = item.id;
+        div.dataset.pairId = item.pairId;
+        div.addEventListener("click", () => onRightClick(div));
+        rightCol.appendChild(div);
+        rightItems.push(div);
+    });
+
+    pairs.forEach(p => {
+        const leftId = leftItems.find(li => Number(li.dataset.pairId) === p.id).dataset.id;
+        const rightId = rightItems.find(ri => Number(ri.dataset.pairId) === p.id).dataset.id;
+        correctMap.set(leftId, rightId);
+    });
+
+    setTimeout(updateAllLines, 50);
+}
+
+function onLeftClick(elem) {
+    if (matchedLeft.has(elem.dataset.id)) return;
+    if (selectedLeft === elem) {
+        elem.classList.remove("selected");
+        selectedLeft = null;
+        return;
+    }
+    if (selectedLeft) selectedLeft.classList.remove("selected");
+    selectedLeft = elem;
+    elem.classList.add("selected");
+    tryMatch();
+}
+
+function onRightClick(elem) {
+    if (matchedRight.has(elem.dataset.id)) return;
+    if (selectedRight === elem) {
+        elem.classList.remove("selected");
+        selectedRight = null;
+        return;
+    }
+    if (selectedRight) selectedRight.classList.remove("selected");
+    selectedRight = elem;
+    elem.classList.add("selected");
+    tryMatch();
+}
+
+function tryMatch() {
+    if (!selectedLeft || !selectedRight) return;
+
+    const leftId = selectedLeft.dataset.id;
+    const rightId = selectedRight.dataset.id;
+
+    const isCorrect = correctMap.get(leftId) === rightId;
+
+    if (isCorrect) {
+        selectedLeft.classList.remove("selected");
+        selectedRight.classList.remove("selected");
+        selectedLeft.classList.add("matched");
+        selectedRight.classList.add("matched");
+        matchedLeft.add(leftId);
+        matchedRight.add(rightId);
+        drawLineBetween(selectedLeft, selectedRight, "#2e7d32");
+        selectedLeft = null;
+        selectedRight = null;
+        checkFinished();
+    } else {
+        drawLineBetween(selectedLeft, selectedRight, "#c62828", true);
+        selectedLeft.classList.remove("selected");
+        selectedRight.classList.remove("selected");
+        selectedLeft = null;
+        selectedRight = null;
+    }
+}
+
+function getCenterPosition(elem) {
+    const rect = elem.getBoundingClientRect();
+    const containerRect = document.getElementById("gameContainer").getBoundingClientRect();
+    return {
+        x: rect.left - containerRect.left + rect.width / 2,
+        y: rect.top - containerRect.top + rect.height / 2
+    };
+}
+
+function drawLineBetween(leftElem, rightElem, color, temporary = false) {
+    const p1 = getCenterPosition(leftElem);
+    const p2 = getCenterPosition(rightElem);
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", p1.x);
+    line.setAttribute("y1", p1.y);
+    line.setAttribute("x2", p2.x);
+    line.setAttribute("y2", p2.y);
+    line.setAttribute("stroke", color);
+    line.setAttribute("stroke-width", 3);
+    line.setAttribute("stroke-linecap", "round");
+    svgLayer.appendChild(line);
+
+    if (!temporary) {
+        lines.push({ leftId: leftElem.dataset.id, rightId: rightElem.dataset.id, line });
+    } else {
+        setTimeout(() => {
+            if (line.parentNode === svgLayer) {
+                svgLayer.removeChild(line);
+            }
+        }, 800);
+    }
+}
+
+function updateAllLines() {
+    lines.forEach(obj => {
+        const leftElem = leftItems.find(li => li.dataset.id === obj.leftId);
+        const rightElem = rightItems.find(ri => ri.dataset.id === obj.rightId);
+        if (!leftElem || !rightElem) return;
+        const p1 = getCenterPosition(leftElem);
+        const p2 = getCenterPosition(rightElem);
+        obj.line.setAttribute("x1", p1.x);
+        obj.line.setAttribute("y1", p1.y);
+        obj.line.setAttribute("x2", p2.x);
+        obj.line.setAttribute("y2", p2.y);
+    });
+}
+
+window.addEventListener("resize", () => {
+    updateAllLines();
+});
+
+function checkFinished() {
+    const topic = topics[currentTopicKey];
+    if (matchedLeft.size === topic.pairs.length) {
+        statusDiv.textContent = "Ügyes vagy, minden párosítás sikerült! 🎉";
+    }
+}
+
+initGame();
+</script>
+
+</body>
+</html>
